@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quest Log</title>
+<style>
+:root{
+  --bg:#14152b;
+  --panel:#1f2142;
+  --panel2:#262a55;
+  --ink:#e8e9f5;
+  --dim:#8b8fc7;
+  --gold:#ffc857;
+  --green:#5ec26a;
+  --red:#ff6b81;
+  --blue:#6ea8ff;
+  --border:#3a3f7a;
+}
+body[data-theme=forest]{
+  --bg:#10211a;
+  --panel:#1a3328;
+  --panel2:#224534;
+  --ink:#e4f2e8;
+  --dim:#7fae8f;
+  --gold:#a8e05f;
+  --green:#5ec26a;
+  --red:#ff8c5a;
+  --blue:#5fd0c5;
+  --border:#34604a;
+}
+body[data-theme=lava]{
+  --bg:#1c0f0f;
+  --panel:#2e1717;
+  --panel2:#3d1d1d;
+  --ink:#f5e8e4;
+  --dim:#b07f72;
+  --gold:#ff8c42;
+  --green:#ffd166;
+  --red:#ff4d4d;
+  --blue:#ff8fa3;
+  --border:#5c2e2e;
+}
+body[data-theme=glacier]{
+  --bg:#0e1a24;
+  --panel:#16293a;
+  --panel2:#1d3850;
+  --ink:#e6f2fa;
+  --dim:#7da3bd;
+  --gold:#7dd3fc;
+  --green:#6ee7b7;
+  --red:#fda4af;
+  --blue:#93c5fd;
+  --border:#2c4f6e;
+}
+body[data-theme=terminal]{
+  --bg:#0a0f0a;
+  --panel:#101a10;
+  --panel2:#162416;
+  --ink:#c8f5c8;
+  --dim:#5f8f5f;
+  --gold:#39ff6e;
+  --green:#39ff6e;
+  --red:#ff5f5f;
+  --blue:#7dffd4;
+  --border:#234a23;
+}
+body[data-theme=sakura]{
+  --bg:#241420;
+  --panel:#352031;
+  --panel2:#452a40;
+  --ink:#fae8f2;
+  --dim:#b88aa8;
+  --gold:#ff9ecb;
+  --green:#a8e0a0;
+  --red:#ff6b81;
+  --blue:#c0a8ff;
+  --border:#5e3a55;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:ui-monospace,"Cascadia Mono","Consolas","Courier New",monospace;
+  min-height:100vh;
+  padding:24px 16px 64px;
+}
+.wrap{max-width:680px;margin:0 auto}
+header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  margin-bottom:20px;
+  flex-wrap:wrap;
+  gap:12px;
+}
+h1{
+  font-size:22px;
+  letter-spacing:3px;
+  text-transform:uppercase;
+}
+h1 span{color:var(--gold)}
+.io button,.io select{
+  background:var(--panel);
+  border:2px solid var(--border);
+  color:var(--dim);
+  font:inherit;
+  font-size:11px;
+  padding:6px 10px;
+  cursor:pointer;
+  letter-spacing:1px;
+}
+.io button:hover,.io select:hover{color:var(--ink);border-color:var(--dim)}
+#resetBtn:hover{color:var(--red);border-color:var(--red)}
+.hud{
+  background:var(--panel);
+  border:3px solid var(--border);
+  box-shadow:5px 5px 0 #0c0d1d;
+  padding:18px;
+  margin-bottom:20px;
+}
+.hud-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:14px;
+}
+.hero{display:flex;flex-direction:column;gap:2px}
+.hero input{
+  background:none;
+  border:none;
+  border-bottom:2px dashed transparent;
+  color:var(--gold);
+  font:inherit;
+  font-size:14px;
+  font-weight:bold;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  padding:2px 0;
+  width:200px;
+}
+.hero input:hover{border-bottom-color:var(--border)}
+.hero input:focus{outline:none;border-bottom-color:var(--gold)}
+.lvl{
+  font-size:18px;
+  letter-spacing:2px;
+}
+.lvl b{color:var(--gold);font-size:26px}
+.stats{display:flex;gap:18px;font-size:12px}
+.stat{text-align:right}
+.stat .v{font-size:18px;display:block}
+.stat.streak .v{color:var(--red)}
+.stat.combo .v{color:var(--blue)}
+.stat .l{color:var(--dim);letter-spacing:1px;text-transform:uppercase;font-size:10px}
+.track{
+  display:flex;
+  gap:6px;
+}
+.tile{
+  flex:1;
+  height:26px;
+  background:var(--panel2);
+  border:2px solid var(--border);
+  position:relative;
+  transition:background .25s,border-color .25s;
+}
+.tile.filled{
+  background:var(--gold);
+  border-color:var(--gold);
+}
+.tile .token{
+  position:absolute;
+  top:-14px;
+  left:50%;
+  width:14px;
+  height:14px;
+  background:var(--green);
+  border:2px solid #2c7a38;
+  transform:translateX(-50%);
+  animation:hop .5s ease;
+}
+@keyframes hop{
+  0%{transform:translateX(-50%) translateY(0)}
+  40%{transform:translateX(-50%) translateY(-10px)}
+  100%{transform:translateX(-50%) translateY(0)}
+}
+.xp-label{
+  margin-top:8px;
+  font-size:11px;
+  color:var(--dim);
+  letter-spacing:1px;
+  display:flex;
+  justify-content:space-between;
+}
+.graph-panel{padding-bottom:12px}
+.graph-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:10px;
+}
+.section-title{
+  font-size:11px;
+  color:var(--dim);
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
+.power-now{font-size:12px;letter-spacing:1px;color:var(--dim)}
+.power-now b{color:var(--gold);font-size:18px}
+#powerGraph{
+  display:block;
+  width:100%;
+  height:140px;
+  background:var(--panel2);
+  border:2px solid var(--border);
+}
+.banner{
+  background:var(--gold);
+  color:#14152b;
+  text-align:center;
+  font-weight:bold;
+  letter-spacing:3px;
+  padding:10px;
+  margin-bottom:20px;
+  border:3px solid #b8860b;
+  box-shadow:5px 5px 0 #0c0d1d;
+  display:none;
+  animation:pop .4s ease;
+}
+@keyframes pop{
+  0%{transform:scale(.8)}
+  60%{transform:scale(1.05)}
+  100%{transform:scale(1)}
+}
+.add{
+  display:flex;
+  gap:8px;
+  margin-bottom:20px;
+  flex-wrap:wrap;
+}
+.add input[type=text]{
+  flex:1;
+  min-width:200px;
+  background:var(--panel);
+  border:3px solid var(--border);
+  color:var(--ink);
+  font:inherit;
+  padding:12px;
+}
+.add input[type=text]:focus{outline:none;border-color:var(--gold)}
+.add select{
+  background:var(--panel);
+  border:3px solid var(--border);
+  color:var(--ink);
+  font:inherit;
+  padding:12px;
+  cursor:pointer;
+}
+.add button{
+  background:var(--gold);
+  border:3px solid #b8860b;
+  color:#14152b;
+  font:inherit;
+  font-weight:bold;
+  padding:12px 20px;
+  cursor:pointer;
+  letter-spacing:1px;
+  box-shadow:3px 3px 0 #0c0d1d;
+}
+.add button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #0c0d1d}
+.section-label{
+  font-size:11px;
+  color:var(--dim);
+  letter-spacing:2px;
+  text-transform:uppercase;
+  margin:18px 0 8px;
+}
+.quest{
+  background:var(--panel);
+  border:3px solid var(--border);
+  padding:12px 14px;
+  margin-bottom:8px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  animation:slide .25s ease;
+}
+@keyframes slide{
+  from{opacity:0;transform:translateY(-6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.quest.done{opacity:.45}
+.quest.done .title{text-decoration:line-through}
+.check{
+  width:24px;
+  height:24px;
+  min-width:24px;
+  background:var(--panel2);
+  border:3px solid var(--border);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:bold;
+  color:transparent;
+}
+.check:hover{border-color:var(--green)}
+.quest.done .check{
+  background:var(--green);
+  border-color:#2c7a38;
+  color:#14152b;
+  cursor:default;
+}
+.title{flex:1;word-break:break-word}
+.badge{
+  font-size:10px;
+  letter-spacing:1px;
+  padding:4px 8px;
+  border:2px solid;
+  white-space:nowrap;
+}
+.badge.easy{color:var(--green);border-color:var(--green)}
+.badge.medium{color:var(--blue);border-color:var(--blue)}
+.badge.hard{color:var(--red);border-color:var(--red)}
+.del{
+  background:none;
+  border:none;
+  color:var(--dim);
+  font:inherit;
+  font-size:16px;
+  cursor:pointer;
+  padding:4px 8px;
+}
+.del:hover{color:var(--red)}
+.empty{
+  text-align:center;
+  color:var(--dim);
+  padding:30px;
+  border:3px dashed var(--border);
+  font-size:13px;
+  letter-spacing:1px;
+}
+.toast{
+  position:fixed;
+  bottom:24px;
+  left:50%;
+  transform:translateX(-50%);
+  background:var(--panel2);
+  border:3px solid var(--gold);
+  color:var(--gold);
+  padding:12px 24px;
+  font-weight:bold;
+  letter-spacing:2px;
+  box-shadow:5px 5px 0 #0c0d1d;
+  display:none;
+  animation:pop .3s ease;
+  z-index:10;
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Quest<span>Log</span></h1>
+    <div class="io">
+      <select id="themeSelect">
+        <option value="dungeon">DUNGEON</option>
+        <option value="forest">FOREST</option>
+        <option value="lava">LAVA</option>
+        <option value="glacier">GLACIER</option>
+        <option value="terminal">TERMINAL</option>
+        <option value="sakura">SAKURA</option>
+      </select>
+      <button id="exportBtn">EXPORT JSON</button>
+      <button id="importBtn">IMPORT JSON</button>
+      <button id="resetBtn">RESET</button>
+      <input type="file" id="importFile" accept=".json" style="display:none">
+    </div>
+  </header>
+
+  <div class="banner" id="banner">LEVEL UP!</div>
+
+  <div class="hud">
+    <div class="hud-top">
+      <div class="hero">
+        <input type="text" id="nameInput" maxlength="20" spellcheck="false">
+        <div class="lvl">LV <b id="level">1</b></div>
+      </div>
+      <div class="stats">
+        <div class="stat streak"><span class="v" id="streak">0</span><span class="l">day streak</span></div>
+        <div class="stat combo"><span class="v" id="combo">x1.0</span><span class="l">combo</span></div>
+        <div class="stat"><span class="v" id="totalXp">0</span><span class="l">total xp</span></div>
+      </div>
+    </div>
+    <div class="track" id="track"></div>
+    <div class="xp-label">
+      <span id="xpText">0 / 100 XP</span>
+      <span id="nextText">NEXT: LV 2</span>
+    </div>
+  </div>
+
+  <div class="hud graph-panel">
+    <div class="graph-head">
+      <span class="section-title">Power Curve</span>
+      <span class="power-now">POWER <b id="powerNow">0</b></span>
+    </div>
+    <svg id="powerGraph" viewBox="0 0 600 140" preserveAspectRatio="none"></svg>
+    <div class="xp-label">
+      <span id="graphFrom"></span>
+      <span id="graphTo"></span>
+    </div>
+  </div>
+
+  <div class="add">
+    <input type="text" id="taskInput" placeholder="New quest..." maxlength="120">
+    <select id="diffSelect">
+      <option value="easy">EASY +10</option>
+      <option value="medium" selected>MEDIUM +25</option>
+      <option value="hard">HARD +50</option>
+    </select>
+    <button id="addBtn">ADD</button>
+  </div>
+
+  <div class="section-label">Active Quests</div>
+  <div id="activeList"></div>
+
+  <div class="section-label">Cleared Today</div>
+  <div id="doneList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const XP_VALUES={easy:10,medium:25,hard:50};
+const TILES=10;
+const KEY="questlog-state-v1";
+
+let state=load();
+
+function defaultState(){
+  return{
+    tasks:[],
+    totalXp:0,
+    level:1,
+    xpInLevel:0,
+    streak:0,
+    lastDoneDay:null,
+    comboCount:0,
+    comboDay:null,
+    theme:"dungeon",
+    name:"Adventurer",
+    xpLog:[]
+  };
+}
+
+function load(){
+  try{
+    const raw=localStorage.getItem(KEY);
+    if(raw){
+      const s=Object.assign(defaultState(),JSON.parse(raw));
+      if(!s.xpLog.length&&s.tasks.some(t=>t.done&&t.doneAt)){
+        s.tasks.filter(t=>t.done&&t.doneAt).sort((a,b)=>a.doneAt-b.doneAt).forEach(t=>{
+          s.xpLog.push({d:new Date(t.doneAt).toISOString().slice(0,10),xp:XP_VALUES[t.diff]});
+        });
+      }
+      return s;
+    }
+  }catch(e){}
+  return defaultState();
+}
+
+function save(){
+  try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}
+}
+
+function todayStr(){
+  return new Date().toISOString().slice(0,10);
+}
+
+function yesterdayStr(){
+  const d=new Date();
+  d.setDate(d.getDate()-1);
+  return d.toISOString().slice(0,10);
+}
+
+function xpNeeded(lv){
+  return 100+(lv-1)*50;
+}
+
+function comboMultiplier(){
+  if(state.comboDay!==todayStr())return 1;
+  return Math.min(1+state.comboCount*0.25,2);
+}
+
+function addTask(){
+  const input=document.getElementById("taskInput");
+  const title=input.value.trim();
+  if(!title)return;
+  const diff=document.getElementById("diffSelect").value;
+  state.tasks.unshift({
+    id:Date.now()+Math.random().toString(36).slice(2,7),
+    title:title,
+    diff:diff,
+    done:false,
+    doneAt:null
+  });
+  input.value="";
+  input.focus();
+  save();
+  render();
+}
+
+function completeTask(id){
+  const t=state.tasks.find(t=>t.id===id);
+  if(!t||t.done)return;
+  t.done=true;
+  t.doneAt=Date.now();
+
+  const today=todayStr();
+  if(state.comboDay!==today){
+    state.comboDay=today;
+    state.comboCount=0;
+  }
+  const mult=comboMultiplier();
+  const gained=Math.round(XP_VALUES[t.diff]*mult);
+  state.comboCount++;
+
+  if(state.lastDoneDay!==today){
+    if(state.lastDoneDay===yesterdayStr()){
+      state.streak++;
+    }else{
+      state.streak=1;
+    }
+    state.lastDoneDay=today;
+  }
+
+  state.totalXp+=gained;
+  state.xpInLevel+=gained;
+  state.xpLog.push({d:today,xp:gained});
+
+  let leveled=false;
+  while(state.xpInLevel>=xpNeeded(state.level)){
+    state.xpInLevel-=xpNeeded(state.level);
+    state.level++;
+    leveled=true;
+  }
+
+  save();
+  render();
+  showToast("+"+gained+" XP"+(mult>1?" (x"+mult.toFixed(2).replace(/0+$/,"").replace(/\.$/,"")+")":""));
+  if(leveled)showBanner();
+}
+
+function deleteTask(id){
+  state.tasks=state.tasks.filter(t=>t.id!==id);
+  save();
+  render();
+}
+
+function showToast(msg){
+  const el=document.getElementById("toast");
+  el.textContent=msg;
+  el.style.display="block";
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.style.display="none",1800);
+}
+
+function showBanner(){
+  const el=document.getElementById("banner");
+  el.style.display="block";
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.style.display="none",2500);
+}
+
+function renderGraph(){
+  const clearedCount=state.tasks.filter(t=>t.done).length;
+  const power=state.totalXp+(state.level-1)*50+clearedCount*5;
+  document.getElementById("powerNow").textContent=power;
+
+  const byDay={};
+  state.xpLog.forEach(e=>{byDay[e.d]=(byDay[e.d]||0)+e.xp;});
+  const days=Object.keys(byDay).sort().slice(-30);
+
+  const svg=document.getElementById("powerGraph");
+  svg.innerHTML="";
+  const from=document.getElementById("graphFrom");
+  const to=document.getElementById("graphTo");
+
+  if(days.length===0){
+    const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.setAttribute("x","300");
+    t.setAttribute("y","75");
+    t.setAttribute("text-anchor","middle");
+    t.setAttribute("fill","var(--dim)");
+    t.setAttribute("font-size","12");
+    t.textContent="CLEAR QUESTS TO GROW YOUR POWER";
+    svg.appendChild(t);
+    from.textContent="";
+    to.textContent="";
+    return;
+  }
+
+  const pts=[];
+  let cum=0;
+  days.forEach(d=>{cum+=byDay[d];pts.push(cum);});
+  if(pts.length===1)pts.unshift(0);
+
+  const W=600,H=140,PAD=10;
+  const max=pts[pts.length-1];
+  const x=i=>PAD+i*(W-2*PAD)/(pts.length-1);
+  const y=v=>H-PAD-(v/max)*(H-2*PAD);
+
+  let path="M"+x(0)+","+y(pts[0]);
+  pts.forEach((v,i)=>{if(i>0)path+=" L"+x(i)+","+y(v);});
+
+  const fill=document.createElementNS("http://www.w3.org/2000/svg","path");
+  fill.setAttribute("d",path+" L"+x(pts.length-1)+","+(H-PAD)+" L"+x(0)+","+(H-PAD)+" Z");
+  fill.setAttribute("fill","var(--gold)");
+  fill.setAttribute("opacity","0.15");
+  svg.appendChild(fill);
+
+  const line=document.createElementNS("http://www.w3.org/2000/svg","path");
+  line.setAttribute("d",path);
+  line.setAttribute("fill","none");
+  line.setAttribute("stroke","var(--gold)");
+  line.setAttribute("stroke-width","3");
+  svg.appendChild(line);
+
+  pts.forEach((v,i)=>{
+    const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
+    r.setAttribute("x",x(i)-3);
+    r.setAttribute("y",y(v)-3);
+    r.setAttribute("width","6");
+    r.setAttribute("height","6");
+    r.setAttribute("fill","var(--gold)");
+    svg.appendChild(r);
+  });
+
+  from.textContent=days.length>1?days[0]:"START";
+  to.textContent=days[days.length-1]+" / "+max+" XP EARNED";
+}
+
+function render(){
+  const nameInput=document.getElementById("nameInput");
+  if(document.activeElement!==nameInput)nameInput.value=state.name||"Adventurer";
+  document.getElementById("level").textContent=state.level;
+  document.getElementById("streak").textContent=state.streak;
+  document.getElementById("totalXp").textContent=state.totalXp;
+  document.getElementById("combo").textContent="x"+comboMultiplier().toFixed(2).replace(/0+$/,"").replace(/\.$/,"");
+
+  const need=xpNeeded(state.level);
+  document.getElementById("xpText").textContent=state.xpInLevel+" / "+need+" XP";
+  document.getElementById("nextText").textContent="NEXT: LV "+(state.level+1);
+
+  const track=document.getElementById("track");
+  track.innerHTML="";
+  const filled=Math.min(TILES,Math.floor(state.xpInLevel/need*TILES));
+  for(let i=0;i<TILES;i++){
+    const tile=document.createElement("div");
+    tile.className="tile"+(i<filled?" filled":"");
+    if(i===filled||(filled===TILES&&i===TILES-1)){
+      const token=document.createElement("div");
+      token.className="token";
+      tile.appendChild(token);
+    }
+    track.appendChild(tile);
+  }
+
+  const active=state.tasks.filter(t=>!t.done);
+  const today=todayStr();
+  const doneToday=state.tasks.filter(t=>t.done&&t.doneAt&&new Date(t.doneAt).toISOString().slice(0,10)===today);
+
+  const activeList=document.getElementById("activeList");
+  activeList.innerHTML="";
+  if(active.length===0){
+    activeList.innerHTML='<div class="empty">No active quests. Add one above.</div>';
+  }else{
+    active.forEach(t=>activeList.appendChild(questEl(t)));
+  }
+
+  const doneList=document.getElementById("doneList");
+  doneList.innerHTML="";
+  if(doneToday.length===0){
+    doneList.innerHTML='<div class="empty">Nothing cleared yet today.</div>';
+  }else{
+    doneToday.forEach(t=>doneList.appendChild(questEl(t)));
+  }
+
+  renderGraph();
+}
+
+function questEl(t){
+  const div=document.createElement("div");
+  div.className="quest"+(t.done?" done":"");
+
+  const check=document.createElement("div");
+  check.className="check";
+  check.textContent=t.done?"X":"";
+  if(!t.done){
+    check.title="Complete quest";
+    check.onclick=()=>completeTask(t.id);
+  }
+
+  const title=document.createElement("div");
+  title.className="title";
+  title.textContent=t.title;
+
+  const badge=document.createElement("span");
+  badge.className="badge "+t.diff;
+  badge.textContent=t.diff.toUpperCase()+" +"+XP_VALUES[t.diff];
+
+  const del=document.createElement("button");
+  del.className="del";
+  del.textContent="x";
+  del.title="Delete";
+  del.onclick=()=>deleteTask(t.id);
+
+  div.appendChild(check);
+  div.appendChild(title);
+  div.appendChild(badge);
+  div.appendChild(del);
+  return div;
+}
+
+function exportJson(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="questlog-"+todayStr()+".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importJson(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(!Array.isArray(data.tasks))throw new Error("bad file");
+      state=Object.assign(defaultState(),data);
+      save();
+      applyTheme();
+      render();
+      showToast("IMPORTED");
+    }catch(e){
+      showToast("INVALID FILE");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function applyTheme(){
+  document.body.dataset.theme=state.theme||"dungeon";
+  document.getElementById("themeSelect").value=state.theme||"dungeon";
+}
+
+document.getElementById("themeSelect").addEventListener("change",e=>{
+  state.theme=e.target.value;
+  save();
+  applyTheme();
+});
+
+document.getElementById("addBtn").onclick=addTask;
+document.getElementById("taskInput").addEventListener("keydown",e=>{
+  if(e.key==="Enter")addTask();
+});
+document.getElementById("exportBtn").onclick=exportJson;
+document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
+document.getElementById("importFile").addEventListener("change",e=>{
+  if(e.target.files[0])importJson(e.target.files[0]);
+  e.target.value="";
+});
+
+document.getElementById("nameInput").addEventListener("change",e=>{
+  state.name=e.target.value.trim()||"Adventurer";
+  e.target.value=state.name;
+  save();
+});
+
+document.getElementById("resetBtn").onclick=()=>{
+  if(!confirm("Reset all progress? This wipes your quests, XP, level, streak and combo. Export a JSON backup first if you want to keep them."))return;
+  const theme=state.theme;
+  const name=state.name;
+  state=defaultState();
+  state.theme=theme;
+  state.name=name;
+  save();
+  applyTheme();
+  render();
+  showToast("PROGRESS RESET");
+};
+
+applyTheme();
+render();
+</script>
+</body>
+</html>
